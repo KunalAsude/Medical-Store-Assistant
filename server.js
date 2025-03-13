@@ -15,19 +15,16 @@ app.use(express.json());
 // Internal function to format the LLM response
 const formatResponse = (text) => {
   try {
-    // Default structure for the response
     const result = {
       summary: "",
       symptoms: [],
       remedies: [],
       precautions: []
     };
-    
-    // Extract sections using regex patterns
+
+    // Extract summary
     const summaryMatch = text.match(/summary:?(.*?)(?=symptoms|key symptoms|$)/is);
     if (summaryMatch && summaryMatch[1]) {
-      // Only remove the redundant heading like "**Brief Summary:**" or "Brief Summary:"
-      // but keep the actual summary content
       result.summary = summaryMatch[1]
         .replace(/\*\*brief summary:\*\*/i, '')
         .replace(/\*\*summary:\*\*/i, '')
@@ -35,34 +32,37 @@ const formatResponse = (text) => {
         .replace(/summary:/i, '')
         .trim();
     }
-    
-    // Extract symptoms
+
+    // Extract symptoms (limit to 2)
     const symptomsMatch = text.match(/symptoms:?(.*?)(?=remedies|home remedies|$)/is);
     if (symptomsMatch && symptomsMatch[1]) {
       result.symptoms = symptomsMatch[1]
         .split(/\n|•|-|\*/)
         .map(item => item.trim())
-        .filter(item => item.length > 0);
+        .filter(item => item.length > 0)
+        .slice(0, 2); // Take only the first 2 symptoms
     }
-    
-    // Extract remedies
+
+    // Extract remedies (limit to 2)
     const remediesMatch = text.match(/remedies:?(.*?)(?=precautions|$)/is);
     if (remediesMatch && remediesMatch[1]) {
       result.remedies = remediesMatch[1]
         .split(/\n|•|-|\*/)
         .map(item => item.trim())
-        .filter(item => item.length > 0);
+        .filter(item => item.length > 0)
+        .slice(0, 2); // Take only the first 2 remedies
     }
-    
-    // Extract precautions
+
+    // Extract precautions (limit to 2)
     const precautionsMatch = text.match(/precautions:?(.*)/is);
     if (precautionsMatch && precautionsMatch[1]) {
       result.precautions = precautionsMatch[1]
         .split(/\n|•|-|\*/)
         .map(item => item.trim())
-        .filter(item => item.length > 0);
+        .filter(item => item.length > 0)
+        .slice(0, 2); // Take only the first 2 precautions
     }
-    
+
     return result;
   } catch (error) {
     console.error("Error in formatResponse:", error);
@@ -74,6 +74,7 @@ const formatResponse = (text) => {
     };
   }
 };
+
 
 app.post('/chat', async (req, res) => {
     try {
